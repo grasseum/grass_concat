@@ -1,5 +1,5 @@
 {
-  "name": "@grasseum/grass_concat",
+  "name": "grass_concat",
   "version": "1.0.0",
   "description": "grasseum default package for con",
   "main": "index.js",
