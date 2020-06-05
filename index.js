@@ -1,81 +1,68 @@
-
-var stream = require('stream')
-var util = require('util');
-
-var pasteur = require("compt")._;
-
-var Transform = stream.Transform ||
-  require('readable-stream').Transform;
+Duplex = require('stream').Duplex,
+util = require('util');
 
 
-function script_concat(command){
+var fs = require("fs");
+var path = require("path");
+
+var GrassConcat = function( filename ) {
+//Readable.call(this, {objectMode: true});
+
+
+this.data = "";
+this.curIndex = 0;
+this.boll1 = true;
+this.count = 0;
+this.refchunk = null;
+this.filename = filename;
+//this.flags = flags;
+
+
+Duplex.call(this, {readableObjectMode: true,writableObjectMode: true,objectMode: true});
+ 
+};
+
+util.inherits(GrassConcat, Duplex);
+
+
+//GrassConcat.prototype._final = function(callback) {
+//  console.log("final")
+//  callback();
+//}
+GrassConcat.prototype._write = function(chunk, encoding, callback) {
+  //
+  var main = this;
+
+    var to_data_string =  chunk//.toString()
+
+
+  if(/[\;\}\)]$/g.test( chunk.contents )){
+    //end_string="\n";
+    chunk.contents = chunk.contents+"\n";
+  }
+    var data = fs.createWriteStream( this.filename, {flags:"a"} );
+    data.write( chunk.contents);
     
-    
-     Transform.call(this, {objectMode: true});
-     this._destroyed = false
-     this._lastLineData ='';
-     this._command = command;
-  
-}
-util.inherits(script_concat, Transform);
-script_concat.prototype._destroy = function (chunk, enc, cb) {
-   // this.cork();
-  
+    this.push(chunk);
+    this.refchunk = chunk;
+      callback(null,chunk);
    
   
-};
-script_concat.prototype.destroy = function (err) {
-  // this.cork();
-  
-  if (this._destroyed) return
-  this._destroyed = true
-  
-    var self = this
-    process.nextTick(function() {
-      if (err)
-        self.emit('error', err)
-      self.emit('close')
-    })
-};
-
-script_concat.prototype._transform = function(chunk, enc, done){
-
-    var data = chunk.toString()
-
-    if (this._lastLineData) data = this._lastLineData + data
-    var clean_lines = [];
-  
-    var end_string = "";    
-    end_string = "\n";
-    clean_lines.push(data+end_string);
-    clean_lines.forEach(this.push.bind(this))
-    done()
-  
-}
-
-
-exports.grass_stream_config=function(){
-    this.setDefaultExtension(["__any__"])
-}
-exports.grasseum_command = function(option1){
-    console.log("grasseum_command")
-}
-exports.grass_stream_write = function(filename,config){
-
-
-
-   return {
-       "filename":filename,
-       "flags":"a",
-      "truncate_content":true
-   }
-}    
-
-exports.grass_stream_transform = function(command){
-  
-    var mindf = new script_concat(command)
     
+  };
+  GrassConcat.prototype._read = function(chunk, encoding) {
+    var main = this;
+    var data = chunk//.toString();
+      var to_data_string =  chunk 
+      if( this.refchunk != null){
+        //console.log(this.refchunk,":rto_data_string",encoding)
+       // this.push(this.refchunk);
+        
+      }
+      
+    
+      
+     
+  };
 
-    return mindf
- 
-}
+module.exports = function(filename){ return new GrassConcat(filename); }
