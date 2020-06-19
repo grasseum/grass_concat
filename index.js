@@ -5,58 +5,92 @@ util = require('util');
 var fs = require("fs");
 var path = require("path");
 
-var GrassConcat = function( filename ) {
-//Readable.call(this, {objectMode: true});
+var compt = require("compts");
+
+var grasseum_directory =require("grasseum_directory");
+var directory_cmd = grasseum_directory.directory();
+var write_file = grasseum_directory.write();
+
+var grasseum_util =require("grasseum_util");
+var duplex_stream = grasseum_util.stream().duplex; 
+
+var GrassConcat = function( filename,config ) {
 
 
-this.data = "";
-this.curIndex = 0;
-this.boll1 = true;
-this.count = 0;
-this.refchunk = null;
-this.filename = filename;
-//this.flags = flags;
 
 
-Duplex.call(this, {readableObjectMode: true,writableObjectMode: true,objectMode: true});
- 
+   
+   
+   
+  this.refchunk = null;
+  this.filename = filename;
+  var refConfig = config ||{};
+
+  this.config = compt._.varExtend({
+    "istruncate":false
+  },refConfig);
+
+
+
+
 };
 
-util.inherits(GrassConcat, Duplex);
 
 
-//GrassConcat.prototype._final = function(callback) {
-//  console.log("final")
-//  callback();
-//}
-GrassConcat.prototype._write = function(chunk, encoding, callback) {
-  //
-  var main = this;
-
-    var to_data_string =  chunk//.toString()
 
 
-  if(/[\;\}\)]$/g.test( chunk.contents )){
-    //end_string="\n";
-    chunk.contents = chunk.contents+"\n";
-  }
-    var data = fs.createWriteStream( this.filename, {flags:"a"} );
-    data.write( chunk.contents);
-    
-    this.push(chunk);
-    this.refchunk = chunk;
-      callback(null,chunk);
-   
+
+GrassConcat.prototype.truncateFile = function() {
   
+  write_file.writeStream(this.filename,
+    ""     
+  );
+
+}
+
+GrassConcat.prototype.write = function(action) {
+
+  var main = this;
+  
+  if(action.data.isGrasseumPlatform()){
+      if(this.config.istruncate){
+      
+        if (action.data.isFirstPath){
+            this.truncateFile();
+        }
+      }
+      
+      var data_content = action.data.contents.toString();
+
+
+      if(/[\;\}\)]$/g.test( data_content )){
+
+        data_content = data_content+"\n";
+      }
+     
+      directory_cmd.createFolderRecursivelyIfNotExist(this.filename)
+     
+      write_file.writeStream(this.filename,
+        data_content,
+        {"attr":{flags:"a"}}
+      );
+      action.push(action.data);
+        this.refchunk = action.data;
+        action.callback(null,action.data);
+          return
+      
+    }else{
+      console.log("This module is not compatible only to grasseum");
+      action.callback(null,action.data);
+      return
+    }  
     
   };
-  GrassConcat.prototype._read = function(chunk, encoding) {
+  GrassConcat.prototype.read = function(action) {
     var main = this;
-    var data = chunk//.toString();
-      var to_data_string =  chunk 
+
       if( this.refchunk != null){
-        //console.log(this.refchunk,":rto_data_string",encoding)
-       // this.push(this.refchunk);
+  
         
       }
       
@@ -65,4 +99,10 @@ GrassConcat.prototype._write = function(chunk, encoding, callback) {
      
   };
 
-module.exports = function(filename){ return new GrassConcat(filename); }
+module.exports = function(filename,config){ 
+  
+  
+  var src_cls =  new  GrassConcat(filename,config); 
+
+  return duplex_stream(null,src_cls) 
+}
