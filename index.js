@@ -1,81 +1,108 @@
-
-var stream = require('stream')
-var util = require('util');
-
-var pasteur = require("compt")._;
-
-var Transform = stream.Transform ||
-  require('readable-stream').Transform;
+Duplex = require('stream').Duplex,
+util = require('util');
 
 
-function script_concat(command){
-    
-    
-     Transform.call(this, {objectMode: true});
-     this._destroyed = false
-     this._lastLineData ='';
-     this._command = command;
-  
-}
-util.inherits(script_concat, Transform);
-script_concat.prototype._destroy = function (chunk, enc, cb) {
-   // this.cork();
-  
+var fs = require("fs");
+var path = require("path");
+
+var compt = require("compts");
+
+var grasseum_directory =require("grasseum_directory");
+var directory_cmd = grasseum_directory.directory();
+var write_file = grasseum_directory.write();
+
+var grasseum_util =require("grasseum_util");
+var duplex_stream = grasseum_util.stream().duplex; 
+
+var GrassConcat = function( filename,config ) {
+
+
+
+
    
-  
+   
+   
+  this.refchunk = null;
+  this.filename = filename;
+  var refConfig = config ||{};
+
+  this.config = compt._.varExtend({
+    "istruncate":false
+  },refConfig);
+
+
+
+
 };
-script_concat.prototype.destroy = function (err) {
-  // this.cork();
-  
-  if (this._destroyed) return
-  this._destroyed = true
-  
-    var self = this
-    process.nextTick(function() {
-      if (err)
-        self.emit('error', err)
-      self.emit('close')
-    })
-};
 
-script_concat.prototype._transform = function(chunk, enc, done){
 
-    var data = chunk.toString()
 
-    if (this._lastLineData) data = this._lastLineData + data
-    var clean_lines = [];
+
+
+
+GrassConcat.prototype.truncateFile = function() {
   
-    var end_string = "";    
-    end_string = "\n";
-    clean_lines.push(data+end_string);
-    clean_lines.forEach(this.push.bind(this))
-    done()
-  
+  write_file.writeStream(this.filename,
+    ""     
+  );
+
 }
 
+GrassConcat.prototype.write = function(action) {
 
-exports.grass_stream_config=function(){
-    this.setDefaultExtension(["__any__"])
-}
-exports.grasseum_command = function(option1){
-    console.log("grasseum_command")
-}
-exports.grass_stream_write = function(filename,config){
-
-
-
-   return {
-       "filename":filename,
-       "flags":"a",
-      "truncate_content":true
-   }
-}    
-
-exports.grass_stream_transform = function(command){
+  var main = this;
   
-    var mindf = new script_concat(command)
+  if(action.data.isGrasseumPlatform()){
+      if(this.config.istruncate){
+      
+        if (action.data.isFirstPath){
+            this.truncateFile();
+        }
+      }
+      
+      var data_content = action.data.contents.toString();
+
+
+      if(/[\;\}\)]$/g.test( data_content )){
+
+        data_content = data_content+"\n";
+      }
+     
+      directory_cmd.createFolderRecursivelyIfNotExist(this.filename)
+     
+      write_file.writeStream(this.filename,
+        data_content,
+        {"attr":{flags:"a"}}
+      );
+      action.push(action.data);
+        this.refchunk = action.data;
+        action.callback(null,action.data);
+          return
+      
+    }else{
+      console.log("This module is not compatible only to grasseum");
+      action.callback(null,action.data);
+      return
+    }  
     
+  };
+  GrassConcat.prototype.read = function(action) {
+    var main = this;
 
-    return mindf
- 
+      if( this.refchunk != null){
+  
+        
+      }
+      
+    
+      
+     
+  };
+
+module.exports = function(filename,config){ 
+  
+  
+  var src_cls =  new  GrassConcat(filename,config); 
+
+  return duplex_stream(null,src_cls) 
 }
