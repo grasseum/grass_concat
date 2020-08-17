@@ -8,8 +8,9 @@ var path = require("path");
 var compt = require("compts");
 
 var grasseum_directory =require("grasseum_directory");
+var files =require("grasseum_files");
 var directory_cmd = grasseum_directory.directory();
-var write_file = grasseum_directory.write();
+var write_file = files.write();
 
 var grasseum_util =require("grasseum_util");
 var duplex_stream = grasseum_util.stream().duplex; 
