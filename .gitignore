@@ -1,1 +1,5 @@
 package_sample.json
+package-lock.json
+node_modules/
+.DS_Store
+index (copy).js

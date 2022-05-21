@@ -10,6 +10,8 @@
     "type": "git",
     "url": "git+https://github.com/grasseum/grass_concat.git"
   },
+  "dependencies": {
+  },
   "keywords": [
     "concat"
   ],
